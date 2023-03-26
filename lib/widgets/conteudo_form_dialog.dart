@@ -1,91 +1,87 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../model/tarefa.dart';
+import '../domain/attractions.dart';
 
-class ConteudoFormDialog extends StatefulWidget{
-  final Tarefa? tarefaAtual;
+class ConteudoFormDialog extends StatefulWidget {
+  final Attraction? actualAttraction;
+  final bool? ReadOnly;
 
-  ConteudoFormDialog({Key? key, this.tarefaAtual}) : super(key: key);
+  ConteudoFormDialog({Key? key, this.actualAttraction, this.ReadOnly})
+      : super(key: key);
 
   @override
   ConteudoFormDialogState createState() => ConteudoFormDialogState();
 }
 
-class ConteudoFormDialogState extends State<ConteudoFormDialog>{
-    final formKey = GlobalKey<FormState>();
-    final descricaoController = TextEditingController();
-    final prazoController = TextEditingController();
-    final _dateFormat = DateFormat('dd/MM/yyy');
+class ConteudoFormDialogState extends State<ConteudoFormDialog> {
+  final formKey = GlobalKey<FormState>();
+  final descricaoController = TextEditingController();
+  final titleController = TextEditingController();
+  final createdDateController = TextEditingController();
+  var readOnly = false;
 
-    @override
-    void initState(){
-      super.initState();
-      if ( widget.tarefaAtual != null){
-        descricaoController.text = widget.tarefaAtual!.descricao;
-        prazoController.text = widget.tarefaAtual!.prazoFormatado;
-      }
+  @override
+  void initState() {
+    super.initState();
+    if (widget.actualAttraction != null) {
+      descricaoController.text = widget.actualAttraction!.content;
+      readOnly = widget.ReadOnly!;
+      createdDateController.text = widget.actualAttraction!.registeredDate;
+      titleController.text = widget.actualAttraction!.title;
     }
+  }
 
-    Widget build(BuildContext context){
-      return Form(
-        key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: descricaoController,
-                decoration: InputDecoration(labelText: 'Descrição'),
-                validator: (String? valor){
-                  if(valor == null || valor.isEmpty){
-                    return 'Informe a descrição';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: prazoController,
-                decoration: InputDecoration(labelText: 'Prazo',
-                prefixIcon: IconButton(
-                    onPressed: _mostraCalendario,
-                    icon: Icon(Icons.calendar_today),
+  @override
+  Widget build(BuildContext context) {
+    return !readOnly
+        ? Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: titleController,
+                  decoration:
+                      const InputDecoration(labelText: 'Attraction Name'),
+                  validator: (String? valor) {
+                    if (valor == null || valor.isEmpty) {
+                      return 'Insert a name!';
+                    }
+                    return null;
+                  },
                 ),
-                  suffixIcon: IconButton(
-                      onPressed: () => prazoController.clear(),
-                      icon: Icon(Icons.close),
+                TextFormField(
+                  controller: descricaoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
                   ),
-                ),
-                readOnly: true,
-              )
-            ],
-          )
+                  validator: (String? valor) {
+                    if (valor == null || valor.isEmpty) {
+                      return 'Insert a description!';
+                    }
+                    return null;
+                  },
+                )
+              ],
+            ))
+        : Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(titleController.text),
+                Text(descricaoController.text),
+                Text(createdDateController.text)
+              ],
+            ));
+  }
+
+  bool dadosValidados() => formKey.currentState!.validate() == true;
+
+  Attraction get newAttraction => Attraction(
+        id: widget.actualAttraction?.id ?? 0,
+        content: descricaoController.text,
+        title: titleController.text,
       );
-    }
-    void _mostraCalendario(){
-      final dataFormatada = prazoController.text;
-      var data = DateTime.now();
-      if (dataFormatada.isNotEmpty){
-        data = _dateFormat.parse(dataFormatada);
-      }
-      showDatePicker(
-          context: context,
-          initialDate: data,
-          firstDate: data.subtract(Duration(days: 365 * 5)),
-          lastDate: data.add(Duration(days: 365 * 5)),
-      ).then((DateTime? dataSelecionada){
-        if (dataSelecionada != null){
-          setState(() {
-            prazoController.text = _dateFormat.format(dataSelecionada);
-          });
-        }
-      });
-    }
-
-    bool dadosValidados() => formKey.currentState!.validate() == true;
-
-    Tarefa get novaTarefa => Tarefa(
-        id: widget.tarefaAtual?.id ?? 0,
-        descricao: descricaoController.text,
-      prazo: prazoController.text.isEmpty ? null : _dateFormat.parse(prazoController.text),
-    );
 }

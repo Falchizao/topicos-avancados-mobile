@@ -18,7 +18,7 @@ class CadastroApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: ListaTarefasPage(),
+      home: ListAtractions(),
       routes: {
         FiltroPage.routeName: (BuildContext context) => FiltroPage(),
       },

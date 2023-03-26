@@ -1,189 +1,256 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gerenciador_tarefas_utfpr/pages/filtro_page.dart';
-import '../model/tarefa.dart';
+import '../domain/attractions.dart';
 import '../widgets/conteudo_form_dialog.dart';
 
-class ListaTarefasPage extends StatefulWidget{
-
+class ListAtractions extends StatefulWidget {
   @override
-  _ListaTarefasPageState createState() => _ListaTarefasPageState();
+  _ListAtractionsState createState() => _ListAtractionsState();
 }
 
-class _ListaTarefasPageState extends State<ListaTarefasPage>{
-
+class _ListAtractionsState extends State<ListAtractions> {
   static const ACAO_EDITAR = 'editar';
+  static const ACTION_READ = 'readOnly';
   static const ACAO_EXCLUIR = 'excluir';
 
-  final tarefas = <Tarefa>[
-
-  ];
-   int _ultimoId = 0;
+  List<Attraction> attractions = <Attraction>[];
+  int _ultimoId = 0;
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: _criarAppBar(),
       body: _criarBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _abrirForm,
-        tooltip: 'Nova Tarefa',
-        child: Icon(Icons.add),
+        tooltip: 'Add Attraction',
+        child: const Icon(Icons.add),
       ),
     );
   }
 
   AppBar _criarAppBar() {
     return AppBar(
-      title: Text('Gerenciador de Tarefas'),
+      title: const Text('Attraction Viewer'),
       actions: [
         IconButton(
-            onPressed: _abrirPaginaFiltro,
-            icon: Icon(Icons.filter_list)),
+            onPressed: () {
+              _abrirPaginaFiltro();
+            },
+            icon: const Icon(Icons.filter_list)),
       ],
     );
   }
 
-  Widget _criarBody(){
-    if(tarefas.isEmpty){
+  Widget _criarBody() {
+    if (attractions.isEmpty) {
       return const Center(
-        child: Text('Nenhuma tarefa cadastrada',
-       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        child: Text(
+          'No attraction registered!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       );
     }
     return ListView.separated(
-        itemBuilder: (BuildContext context, int index){
-          final tarefa = tarefas[index];
-          return PopupMenuButton<String>(
-            child: ListTile(
-              title: Text('${tarefa.id} - ${tarefa.descricao}'),
-              subtitle: Text(tarefa.prazo == null ? 'Sem prazo definido' : 'Prazo - ${tarefa.prazoFormatado}'),
-            ),
-              itemBuilder: (BuildContext context) => criarItensMenuPopup(),
-            onSelected: (String valorSelecionado){
-              if (valorSelecionado == ACAO_EDITAR){
-                _abrirForm(tarefaAtual: tarefa, indice: index);
-              }else{
-                _excluir(index);
-              }
-            },
-          );
-        },
-        separatorBuilder: (BuildContext context, int index) => Divider(),
-        itemCount: tarefas.length,
+      itemBuilder: (BuildContext context, int index) {
+        final attraction = attractions[index];
+        return PopupMenuButton<String>(
+          child: ListTile(
+            title: Text('${attraction.id} - ${attraction.title}'),
+            subtitle: Text('${attraction.content}'
+                '\nRegistered on - ${attraction.registeredDate}'),
+          ),
+          itemBuilder: (BuildContext context) => criarItensMenuPopup(),
+          onSelected: (String valorSelecionado) {
+            if (valorSelecionado == ACAO_EDITAR) {
+              _abrirForm(currentAttraction: attraction, idx: index);
+            } else if (valorSelecionado == ACAO_EXCLUIR) {
+              _excluir(index);
+            } else {
+              _view(index);
+            }
+          },
+        );
+      },
+      separatorBuilder: (BuildContext context, int index) => Divider(),
+      itemCount: attractions.length,
     );
   }
 
-  void _abrirPaginaFiltro(){
+  void sortDate() {
+    setState(() {
+      attractions = attractions.reversed.toList();
+    });
+  }
+
+  void filterList(String content) {
+    List<Attraction> filteredAttraction = <Attraction>[];
+
+    for (Attraction atr in attractions) {
+      if (atr.content.contains(content)) {
+        filteredAttraction.add(atr);
+      }
+    }
+
+    if (filteredAttraction.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      attractions = filteredAttraction;
+    });
+  }
+
+  void _abrirPaginaFiltro() {
     final navigator = Navigator.of(context);
     navigator.pushNamed(FiltroPage.routeName).then((alterouValores) {
-      if(alterouValores == true){
-        ////
+      if (alterouValores != null) {
+        dynamic values = alterouValores;
+        if (values[0] == true) {
+          var contentFiter = values[1];
+          var desc = values[2];
+
+          if (desc) {
+            sortDate();
+          }
+
+          if (contentFiter != null && contentFiter != "") {
+            filterList(contentFiter);
+          }
+        }
       }
     });
   }
 
-  List<PopupMenuEntry<String>> criarItensMenuPopup(){
-    return[
+  List<PopupMenuEntry<String>> criarItensMenuPopup() {
+    return [
       PopupMenuItem<String>(
-        value: ACAO_EDITAR,
+          value: ACTION_READ,
           child: Row(
-            children: [
-              Icon(Icons.edit, color: Colors.black),
+            children: const [
+              Icon(Icons.remove_red_eye, color: Colors.black),
               Padding(
-                  padding: EdgeInsets.only(left: 10),
-                child: Text('Editar'),
+                padding: EdgeInsets.only(left: 10),
+                child: Text('View'),
               )
             ],
-          )
-      ),
+          )),
+      PopupMenuItem<String>(
+          value: ACAO_EDITAR,
+          child: Row(
+            children: const [
+              Icon(Icons.edit, color: Colors.black),
+              Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: Text('Edit'),
+              )
+            ],
+          )),
       PopupMenuItem<String>(
           value: ACAO_EXCLUIR,
           child: Row(
-            children: [
+            children: const [
               Icon(Icons.delete, color: Colors.red),
               Padding(
                 padding: EdgeInsets.only(left: 10),
-                child: Text('Excluir'),
+                child: Text('Delete'),
               )
             ],
-          )
-      )
+          ))
     ];
   }
 
-  void _abrirForm({Tarefa? tarefaAtual, int? indice}){
+  void _view(int idx) {
     final key = GlobalKey<ConteudoFormDialogState>();
     showDialog(
         context: context,
-        builder: (BuildContext context){
+        builder: (BuildContext context) {
           return AlertDialog(
-            title: Text(tarefaAtual == null ? 'Nova tarefa' :
-            ' Alterar a tarefa ${tarefaAtual.id}'),
-            content: ConteudoFormDialog(key: key, tarefaAtual: tarefaAtual),
+            title: Text(attractions[idx].title),
+            content: ConteudoFormDialog(
+                key: key, actualAttraction: attractions[idx], ReadOnly: true),
+          );
+        });
+  }
+
+  void _abrirForm({Attraction? currentAttraction, int? idx}) {
+    final key = GlobalKey<ConteudoFormDialogState>();
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(currentAttraction == null
+                ? 'New Attraction'
+                : ' Update attraction ${currentAttraction.id}'),
+            content: ConteudoFormDialog(
+              key: key,
+              actualAttraction: currentAttraction,
+              ReadOnly: false,
+            ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancelar'),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
               ),
               TextButton(
                 onPressed: () {
-                  if (key.currentState != null && key.currentState!.dadosValidados()){
+                  if (key.currentState != null &&
+                      key.currentState!.dadosValidados()) {
                     setState(() {
-                      final novaTarefa = key.currentState!.novaTarefa;
-                      if (indice == null){
-                        novaTarefa.id = ++ _ultimoId;
-                      }else{
-                        tarefas[indice] = novaTarefa;
-                      }
-                      tarefas.add(novaTarefa);
+                      final newAttraction = key.currentState!.newAttraction;
+                      if (idx == null) {
+                        newAttraction.id = ++_ultimoId;
 
+                        attractions.add(newAttraction);
+                      } else {
+                        attractions[idx] = newAttraction;
+                      }
                     });
                     Navigator.of(context).pop();
                   }
                 },
-                child: Text('Salvar'),
+                child: const Text('Save'),
               )
             ],
           );
-        }
-    );
+        });
   }
 
-  void _excluir(int indice){
+  void _excluir(int idx) {
     showDialog(
         context: context,
-        builder: (BuildContext context){
+        builder: (BuildContext context) {
           return AlertDialog(
             title: Row(
-              children: [
-                Icon(Icons.warning, color: Colors.red,),
+              children: const [
+                Icon(
+                  Icons.warning,
+                  color: Colors.red,
+                ),
                 Padding(
-                    padding: EdgeInsets.only(left: 10),
-                  child: Text('ATENÇÃO'),
+                  padding: EdgeInsets.only(left: 10),
+                  child: Text('Warning'),
                 ),
               ],
             ),
-            content: Text('Esse registro será deletado definitivamente'),
+            content: const Text('This item will be deleted'),
             actions: [
               TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancelar')
-              ),
+                  child: const Text('Cancel')),
               TextButton(
                   onPressed: () {
-                     Navigator.of(context).pop();
-                     setState(() {
-                       tarefas.removeAt(indice);
-                     });
-                     },
-                  child: Text('OK')
-              )
+                    Navigator.of(context).pop();
+                    setState(() {
+                      attractions.removeAt(idx);
+                    });
+                  },
+                  child: const Text('OK'))
             ],
           );
-        }
-    );
-
+        });
   }
 }
