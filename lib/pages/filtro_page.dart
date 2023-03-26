@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/attractions.dart';
@@ -15,17 +16,13 @@ class FiltroPage extends StatefulWidget {
 }
 
 class _FiltroPageState extends State<FiltroPage> {
-  final _camposParaOrdenacao = {
-    Attraction.ID: 'ID',
-    Attraction.DESCRIPTION: 'Content',
-    Attraction.REGISTERED: 'Registered_day'
-  };
-
   late final SharedPreferences _prefs;
   final _contentController = TextEditingController();
-  String _campoOrdenacao = Attraction.ID;
+  final _titleController = TextEditingController();
+  final _dateController = TextEditingController();
   bool _usarOrdemDecrescente = false;
   bool _alterouValores = false;
+  final _formatter = DateFormat('dd/MM/yyyy HH:mm:ss');
 
   @override
   void initState() {
@@ -35,14 +32,7 @@ class _FiltroPageState extends State<FiltroPage> {
 
   void _carregarSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _campoOrdenacao =
-          _prefs.getString(FiltroPage.chaveCampoOrdenacao) ?? Attraction.ID;
-      _usarOrdemDecrescente =
-          _prefs.getBool(FiltroPage.chaveUsarOrdemDecrescente) == true;
-      _contentController.text =
-          _prefs.getString(FiltroPage.keyFilterContent) ?? '';
-    });
+    setState(() {});
   }
 
   @override
@@ -64,26 +54,35 @@ class _FiltroPageState extends State<FiltroPage> {
             padding: EdgeInsets.only(left: 10, top: 10),
             child: Text('Campo para ordenação'),
           ),
-          for (final campo in _camposParaOrdenacao.keys)
-            Row(
-              children: [
-                Radio(
-                  value: campo,
-                  groupValue: _campoOrdenacao,
-                  onChanged: _onCampoOrdenacaoChanged,
-                ),
-                Text(_camposParaOrdenacao[campo]!),
-              ],
-            ),
           const Divider(),
           Row(
             children: [
-              Checkbox(
-                value: _usarOrdemDecrescente,
-                onChanged: _onUsarOrdemDecrescenteChanged,
-              ),
-              const Text('Usar ordem decrescente'),
+              SizedBox(
+                width: 100,
+                child: TextFormField(
+                    controller: _dateController,
+                    decoration: InputDecoration(
+                        labelText: 'date',
+                        prefixIcon: IconButton(
+                          onPressed: _showDatePicker,
+                          icon: Icon(Icons.calendar_today),
+                        ),
+                        suffixIcon: IconButton(
+                          onPressed: () => _dateController.clear(),
+                          icon: Icon(Icons.close),
+                        ))),
+              )
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: TextField(
+              decoration: const InputDecoration(
+                labelText: 'Title starts with',
+              ),
+              controller: _titleController,
+              onChanged: _onFiltroDescricaoChanged,
+            ),
           ),
           const Divider(),
           Padding(
@@ -99,11 +98,19 @@ class _FiltroPageState extends State<FiltroPage> {
         ],
       );
 
-  void _onCampoOrdenacaoChanged(String? valor) {
-    _prefs.setString(FiltroPage.chaveCampoOrdenacao, valor!);
-    _alterouValores = true;
-    setState(() {
-      _campoOrdenacao = valor;
+  void _showDatePicker() {
+    showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime.now().subtract(Duration(days: 365 * 5)),
+            lastDate: DateTime.now().add(Duration(days: 365 * 5)))
+        .then((value) {
+      if (value != null) {
+        setState(() {
+          _alterouValores = true;
+          _dateController.text = _formatter.format(value);
+        });
+      }
     });
   }
 
@@ -124,7 +131,8 @@ class _FiltroPageState extends State<FiltroPage> {
     var att = [
       _alterouValores,
       _contentController.text,
-      _usarOrdemDecrescente,
+      _dateController.text,
+      _titleController.text
     ];
     Navigator.of(context).pop(att);
     return true;

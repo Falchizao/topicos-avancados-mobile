@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gerenciador_tarefas_utfpr/pages/filtro_page.dart';
+import 'package:intl/intl.dart';
 import '../domain/attractions.dart';
 import '../widgets/conteudo_form_dialog.dart';
 
@@ -80,9 +81,36 @@ class _ListAtractionsState extends State<ListAtractions> {
     );
   }
 
-  void sortDate() {
+  void sortDate(String date) {
+    List<Attraction> filteredAttraction = <Attraction>[];
+
+    var datetime = DateFormat("dd/MM/yyyy HH:mm:ss").parse(date);
+    for (Attraction atr in attractions) {
+      var atrDate = DateFormat("dd/MM/yyyy").parse(atr.registeredDate);
+      if (atrDate.isAfter(datetime)) {
+        filteredAttraction.add(atr);
+      }
+    }
     setState(() {
-      attractions = attractions.reversed.toList();
+      attractions = filteredAttraction;
+    });
+  }
+
+  void filterTitle(String title) {
+    List<Attraction> filteredAttraction = <Attraction>[];
+
+    for (Attraction atr in attractions) {
+      if (atr.title.contains(title)) {
+        filteredAttraction.add(atr);
+      }
+    }
+
+    if (filteredAttraction.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      attractions = filteredAttraction;
     });
   }
 
@@ -111,10 +139,15 @@ class _ListAtractionsState extends State<ListAtractions> {
         dynamic values = alterouValores;
         if (values[0] == true) {
           var contentFiter = values[1];
-          var desc = values[2];
+          var date = values[2];
+          var title = values[3];
 
-          if (desc) {
-            sortDate();
+          if (date != null) {
+            sortDate(date);
+          }
+
+          if (title != null && title.length > 0) {
+            filterTitle(title);
           }
 
           if (contentFiter != null && contentFiter != "") {
