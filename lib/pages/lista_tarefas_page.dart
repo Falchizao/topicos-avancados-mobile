@@ -142,7 +142,7 @@ class _ListAtractionsState extends State<ListAtractions> {
           var date = values[2];
           var title = values[3];
 
-          if (date != null) {
+          if (date != null && date != "") {
             sortDate(date);
           }
 
