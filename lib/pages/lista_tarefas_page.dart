@@ -283,8 +283,9 @@ class _ListAtractionsState extends State<ListAtractions> {
                   child: const Text('Cancel')),
               TextButton(
                   onPressed: () {
+                    Attraction att = attractions[idx];
                     Navigator.of(context).pop();
-                    dao.remover(idx).then((value) {
+                    dao.remover(att.id!).then((value) {
                       if (value) {
                         _fetchAttractions();
                       }

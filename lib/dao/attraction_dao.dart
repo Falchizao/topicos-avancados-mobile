@@ -33,7 +33,7 @@ class AttractionDao {
     final registrosAtualizados = await database.delete(
       'attraction',
       where: '${Attraction.ID} = ?',
-      whereArgs: [id + 1],
+      whereArgs: [id],
     );
     return registrosAtualizados > 0;
   }
