@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:gerenciador_tarefas_utfpr/dao/attraction_dao.dart';
 import 'package:gerenciador_tarefas_utfpr/pages/filtro_page.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/attractions.dart';
 import '../widgets/conteudo_form_dialog.dart';
 
@@ -18,7 +20,43 @@ class _ListAtractionsState extends State<ListAtractions> {
   static const ACAO_EXCLUIR = 'excluir';
 
   List<Attraction> attractions = <Attraction>[];
+  final dao = AttractionDao();
   int _ultimoId = 0;
+  bool isloadig = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAttractions();
+  }
+
+  void _fetchAttractions() async {
+    setState(() {
+      isloadig = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final campoOrdenacao = Attraction.ID;
+    final usarOrdemDecrescente =
+        prefs.getBool(FiltroPage.chaveUsarOrdemDecrescente) == true;
+    final filtroDescricao = prefs.getString("content") ?? '';
+    final filtrotitle = prefs.getString("title") ?? '';
+    final attractionsfetch = await dao.listar(
+      filtrocontent: filtroDescricao,
+      filtrotitle: filtrotitle,
+      campoOrdenacao: campoOrdenacao,
+      usarOrdemDecrescente: usarOrdemDecrescente,
+    );
+    setState(() {
+      attractions.clear();
+      if (attractionsfetch.isNotEmpty) {
+        attractions.addAll(attractionsfetch);
+      }
+    });
+    setState(() {
+      isloadig = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +85,11 @@ class _ListAtractionsState extends State<ListAtractions> {
   }
 
   Widget _criarBody() {
+    if (isloadig) {
+      Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     if (attractions.isEmpty) {
       return const Center(
         child: Text(
@@ -60,6 +103,15 @@ class _ListAtractionsState extends State<ListAtractions> {
         final attraction = attractions[index];
         return PopupMenuButton<String>(
           child: ListTile(
+            leading: Checkbox(
+              value: attraction.ended,
+              onChanged: (bool? checked) {
+                setState(() {
+                  attraction.ended = checked == true;
+                });
+                dao.salvar(attraction);
+              },
+            ),
             title: Text('${attraction.id} - ${attraction.title}'),
             subtitle: Text('${attraction.content}'
                 '\nRegistered on - ${attraction.registeredDate}'),
@@ -97,39 +149,11 @@ class _ListAtractionsState extends State<ListAtractions> {
   }
 
   void filterTitle(String title) {
-    List<Attraction> filteredAttraction = <Attraction>[];
-
-    for (Attraction atr in attractions) {
-      if (atr.title.contains(title)) {
-        filteredAttraction.add(atr);
-      }
-    }
-
-    if (filteredAttraction.isEmpty) {
-      return;
-    }
-
-    setState(() {
-      attractions = filteredAttraction;
-    });
+    _fetchAttractions();
   }
 
   void filterList(String content) {
-    List<Attraction> filteredAttraction = <Attraction>[];
-
-    for (Attraction atr in attractions) {
-      if (atr.content.contains(content)) {
-        filteredAttraction.add(atr);
-      }
-    }
-
-    if (filteredAttraction.isEmpty) {
-      return;
-    }
-
-    setState(() {
-      attractions = filteredAttraction;
-    });
+    _fetchAttractions();
   }
 
   void _abrirPaginaFiltro() {
@@ -137,23 +161,7 @@ class _ListAtractionsState extends State<ListAtractions> {
     navigator.pushNamed(FiltroPage.routeName).then((alterouValores) {
       if (alterouValores != null) {
         dynamic values = alterouValores;
-        if (values[0] == true) {
-          var contentFiter = values[1];
-          var date = values[2];
-          var title = values[3];
-
-          if (date != null && date != "") {
-            sortDate(date);
-          }
-
-          if (title != null && title.length > 0) {
-            filterTitle(title);
-          }
-
-          if (contentFiter != null && contentFiter != "") {
-            filterList(contentFiter);
-          }
-        }
+        filterTitle('');
       }
     });
   }
@@ -234,13 +242,12 @@ class _ListAtractionsState extends State<ListAtractions> {
                       key.currentState!.dadosValidados()) {
                     setState(() {
                       final newAttraction = key.currentState!.newAttraction;
-                      if (idx == null) {
-                        newAttraction.id = ++_ultimoId;
-
-                        attractions.add(newAttraction);
-                      } else {
-                        attractions[idx] = newAttraction;
-                      }
+                      dao.salvar(newAttraction).then((value) {
+                        if (value) {
+                          _fetchAttractions();
+                        }
+                      });
+                      _fetchAttractions();
                     });
                     Navigator.of(context).pop();
                   }
@@ -277,8 +284,10 @@ class _ListAtractionsState extends State<ListAtractions> {
               TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    setState(() {
-                      attractions.removeAt(idx);
+                    dao.remover(idx).then((value) {
+                      if (value) {
+                        _fetchAttractions();
+                      }
                     });
                   },
                   child: const Text('OK'))

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../domain/attractions.dart';
@@ -17,6 +16,7 @@ class ConteudoFormDialog extends StatefulWidget {
 class ConteudoFormDialogState extends State<ConteudoFormDialog> {
   final formKey = GlobalKey<FormState>();
   final descricaoController = TextEditingController();
+  final differentialsController = TextEditingController();
   final titleController = TextEditingController();
   final createdDateController = TextEditingController();
   var readOnly = false;
@@ -27,6 +27,7 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog> {
     if (widget.actualAttraction != null) {
       descricaoController.text = widget.actualAttraction!.content;
       readOnly = widget.ReadOnly!;
+      differentialsController.text = widget.actualAttraction!.differentials;
       createdDateController.text = widget.actualAttraction!.registeredDate;
       titleController.text = widget.actualAttraction!.title;
     }
@@ -43,10 +44,10 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog> {
                 TextFormField(
                   controller: titleController,
                   decoration:
-                      const InputDecoration(labelText: 'Attraction Name'),
+                      const InputDecoration(labelText: 'Attraction Title'),
                   validator: (String? valor) {
                     if (valor == null || valor.isEmpty) {
-                      return 'Insert a name!';
+                      return 'Insert a title!';
                     }
                     return null;
                   },
@@ -62,6 +63,18 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog> {
                     }
                     return null;
                   },
+                ),
+                TextFormField(
+                  controller: differentialsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Differentials',
+                  ),
+                  validator: (String? valor) {
+                    if (valor == null || valor.isEmpty) {
+                      return 'Insert the differentials!';
+                    }
+                    return null;
+                  },
                 )
               ],
             ))
@@ -70,9 +83,23 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text('Title :'),
                 Text(titleController.text),
+                SizedBox(
+                  height: 5,
+                ),
+                Text('Description :'),
                 Text(descricaoController.text),
-                Text(createdDateController.text)
+                SizedBox(
+                  height: 5,
+                ),
+                Text('Created at :'),
+                Text(createdDateController.text),
+                SizedBox(
+                  height: 5,
+                ),
+                Text('Differentials :'),
+                Text(differentialsController.text)
               ],
             ));
   }
@@ -80,8 +107,9 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog> {
   bool dadosValidados() => formKey.currentState!.validate() == true;
 
   Attraction get newAttraction => Attraction(
-        id: widget.actualAttraction?.id ?? 0,
+        id: widget.actualAttraction?.id ?? null,
         content: descricaoController.text,
+        differentials: differentialsController.text,
         title: titleController.text,
       );
 }

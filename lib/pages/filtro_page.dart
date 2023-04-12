@@ -55,25 +55,6 @@ class _FiltroPageState extends State<FiltroPage> {
             child: Text('Campo para ordenação'),
           ),
           const Divider(),
-          Row(
-            children: [
-              SizedBox(
-                width: 100,
-                child: TextFormField(
-                    controller: _dateController,
-                    decoration: InputDecoration(
-                        labelText: 'date',
-                        prefixIcon: IconButton(
-                          onPressed: _showDatePicker,
-                          icon: Icon(Icons.calendar_today),
-                        ),
-                        suffixIcon: IconButton(
-                          onPressed: () => _dateController.clear(),
-                          icon: Icon(Icons.close),
-                        ))),
-              )
-            ],
-          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: TextField(
@@ -134,6 +115,23 @@ class _FiltroPageState extends State<FiltroPage> {
       _dateController.text,
       _titleController.text
     ];
+
+    if (_contentController.text != "") {
+      _prefs.setString('content', _contentController.text);
+    } else {
+      try {
+        _prefs.remove('content');
+      } catch (e) {}
+    }
+
+    if (_titleController.text != "") {
+      _prefs.setString('title', _titleController.text);
+    } else {
+      try {
+        _prefs.remove('title');
+      } catch (e) {}
+    }
+
     Navigator.of(context).pop(att);
     return true;
   }
